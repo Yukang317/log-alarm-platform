@@ -1,0 +1,10 @@
+{
+  "total_results": 2925,
+  "total_logs_on_disk": 2925,
+  "samples_written": 2925,
+  "missing_log_files": 0,
+  "empty_log_files": 0,
+  "duplicate_result_log_files": 0,
+  "results_without_log_file": 0,
+  "logs_not_referenced_by_results": 0
+}

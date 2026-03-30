@@ -1,0 +1,10 @@
+{{ 'Below are FFmpeg transcode log content that describe the result of the transcoding. Analyze the log content and provide the result of the transcoding in json string.' }}{% for message in messages %}{% if message['role'] == 'user' %}{{ '
+
+### Instruction:
+' + message['content'] }}{% elif message['role'] == 'assistant' %}{{ '
+
+### Response:
+' + message['content'] + '<|im_end|>' }}{% else %}{{ raise_exception('Only user and assistant roles are supported!') }}{% endif %}{% endfor %}{% if add_generation_prompt %}{{ '
+
+### Response:
+' }}{% endif %}

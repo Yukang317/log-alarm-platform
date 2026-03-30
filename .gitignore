@@ -1,0 +1,39 @@
+# ==============================================
+# 日志报警平台专属 .gitignore (Qwen2.5-3B+Unsloth+vLLM)
+# ==============================================
+
+# 1. Python 编译文件
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+*.pyd
+
+# 2. 虚拟环境（绝对不上传）
+.venv/
+.python-version
+
+# 3. 大模型权重文件（核心！GitHub禁止大文件，必须忽略）
+qwen25-3b/*.safetensors
+qwen25-3b/*.bin
+qwen25-3b/*.pt
+
+# 4. 微调/缓存文件
+unsloth_compiled_cache/
+finetuned_lora/
+!log-analyzer-via-llm/finetuned_lora/
+!log-analyzer-via-llm/finetuned_lora/**
+outputs/
+._____temp/
+.msc
+.mv
+
+# 5. 依赖锁文件/临时文件
+uv.lock
+request.data
+request.json
+
+# 6. 日志/临时数据
+*.log
+*.tmp
+.DS_Store
