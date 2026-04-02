@@ -6,7 +6,7 @@ uv run vllm serve ../qwen25-3b \
     --host 0.0.0.0 \
     --port 8000 \
     --enable-lora \
-    --lora-moudles my-lora=./finetuned_lora \
+    --lora-modules my-lora=./finetuned_lora \
     --max-model-len=4k
 
 

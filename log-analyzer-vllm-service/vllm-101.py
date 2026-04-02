@@ -1,4 +1,10 @@
-# 这个脚本是用来分析消息的
+# vllm-101.py                           （这个脚本是用来分析消息的）
+# vllm-101.py 是直接在 Python 代码中使用 vllm 库（不是启动服务）
+#   即，只能本地运行，不能远程访问
+# 目的：
+#   演示如何在代码中集成 vllm
+#   后续可能会用在 FastAPI 中（替代调用外部 vllm 服务）
+
 # LLM 主类，SamplingParams 放temperature等参数的类
 from vllm import LLM, SamplingParams
 from vllm.lora.request import LoRARequest
@@ -8,6 +14,7 @@ LORA_PATH = "./finetuned_lora"
 LORA_NAME = "my_lora"
 LORA_ID = 1
 
+# 加载模型到内存
 llm = LLM(
     model=BASE_MODEL_PATH,
     max_model_len=2048,
@@ -43,6 +50,7 @@ def analyze_log(log_str: str):
     conversation = [
         {"role": "user", "content": system_prompt + " " + log_str}
     ]
+    # 直接用代码调用模型
     outputs = llm.chat(
         conversation,
         sampling_params=sampling_params,

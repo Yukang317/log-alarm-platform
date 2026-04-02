@@ -20,7 +20,7 @@ webhook_url = "https://open.feishu.cn/open-apis/bot/v2/hook/d5c30596-7942-4932-8
 MAX_RETRIES= 3
 
 
-
+# 注释掉了同步 LLM，一下这些是单进程的写法
 # llm = LLM(
 #     model=BASE_MODEL_PATH,
 #     max_model_len=2048,
@@ -66,15 +66,15 @@ async def lifespan(app: FastAPI):
 
     
     tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL_PATH, trust_remote_code=True)
-    engine_args = AsyncEngineArgs(
+    engine_args = AsyncEngineArgs(                    # ⭐ 异步引擎参数
         model=BASE_MODEL_PATH,
         max_model_len=2048,
         # 以下两个参数来控制一批一批的做多少
         # 以时间优化Continuous Batchinbg为例，粗糙理解第一个参数是行，第二个参数是面积
-        max_num_seqs=32,                # 最大并发量
-        max_num_batched_tokens=65536,   # 序列并发
+        max_num_seqs=32,                # 最大并发量    ⭐ 最大 32 个并发序列
+        max_num_batched_tokens=65536,   # 序列并发      ⭐ 16 倍大的批次
         tensor_parallel_size=1,
-        gpu_memory_utilization=0.85,    # 与上两个
+        gpu_memory_utilization=0.85,    # 与上两个      ⭐ 更高显存利用
         enable_lora=True,
         max_lora_rank=16,
         max_loras=1,            # 最多支持一个lora
@@ -83,7 +83,7 @@ async def lifespan(app: FastAPI):
         block_size=16,
         enforce_eager=False,
     )
-    llm = AsyncLLMEngine.from_engine_args(engine_args)
+    llm = AsyncLLMEngine.from_engine_args(engine_args) # ⭐ 异步引擎
 
     sampling_params = SamplingParams(
         max_tokens=512,
@@ -110,7 +110,7 @@ async def vllm_analyze(log_str: str):
     ]
     # 手动应用聊天模板
     prompt_str = tokenizer.apply_chat_template(conversation, tokenize=False, add_generation_prompt=True)
-    async for output in llm.generate(
+    async for output in llm.generate(   # ⭐ 异步生成
         prompt_str,
         sampling_params,
         random_uuid(),      # 异步返回，用ID区分
@@ -208,9 +208,9 @@ async def analyze_log(request: Request):
             if succ == False:
                 notify_result = await send_feishu_notification(
                     webhook_url = webhook_url,
-                    title = "大哥大姐新年好"
+                    title = "大哥大姐新年好",
                     text_content = "出错了，错误是：" + err + "解决方案是：" + resolution,
-                    href = "http://www.baidu.dom"
+                    href = "http://www.baidu.com",
                     at_user_id = "all"
                 )
                 return raw_output
