@@ -9,7 +9,9 @@ import asyncio
 
 VLLM_SERVICE_URL = "http://localhost:8001"  # vLLM 推理服务的地址
 WEBHOOK_URL = "https://open.feishu.cn/open-apis/bot/v2/hook/d5c30596-7942-4932-8728-d83716aaaa27"
+# 这里的业务代码写了系统提示此之后，验证脚本的curl中没必要写了，写了会出干扰模型判断。
 SYSTEM_PROMPT = "Below are FFmpeg transcode log content that describe the result of the video transcoding. Analyze the log content and provide the transcoding status, PSNR value, any detected error message, and suggested resolution steps in json."
+# 注意：请求数据中已包含系统提示，此处不再重复添加
 MAX_RETRIES = 3                             # 最大重试次数（网络请求失败时自动重试）
 
 # ========== 初始化 FastAPI 应用 ==========
@@ -52,7 +54,7 @@ async def call_vllm_inference(log_str: str) -> str:
         raise Exception(f"vLLM service error: {response.text}")
 
     # 解析并返回 AI 生成的文本内容
-    return response.json()["choices"][0]["messages"]["content"]
+    return response.json()["choices"][0]["message"]["content"]
 
 
 
@@ -77,7 +79,7 @@ async def send_feishu_notification(title: str, text_content: str):
                     "content":[[
                         {
                             "tag": "text",
-                            "text": f"{text_contetn}\n"
+                            "text": f"{text_content}\n"
                         },
                         {
                             "tag": "a",
@@ -145,24 +147,40 @@ async def analyze_log(request: Request):
     # 步骤 2: 带重试机制的分析循环
     for attempt in range(1, MAX_RETRIES + 1):  # 最多尝试 3 次
         try:
-            # 调用 vLLM 推理服务
+            # 调用 vLLM 推理服务（请求数据中已包含系统提示）
             raw_output = await call_vllm_inference(ffmpeg_log_str)
             # 解析 AI 返回的 JSON 字符串
             parsed = json.loads(raw_output)
 
             # 验证必需字段是否存在
-            if "success" not in parsed or "psnr" not in parsed:
-                raise ValueError("Missing required fields: 'success' or 'psnr'")
+            if "psnr_value" not in parsed:
+                raise ValueError("Missing required field: 'psnr_value'")
             
-            success = parsed["success"]
-            error_msg = parsed.get("error", "")
-            resolution = parsed.get("resolution", "")
+            # 提取字段
+            model_successful = parsed.get("successful", False)
+            psnr_value = parsed.get("psnr_value", 0)
+            error_message = parsed.get("error_message", "")
+            resolution_steps = parsed.get("resolution_steps", "")
+
+            # 根据PSNR值和错误信息推断实际转码状态
+            # 规则：
+            # 1. 如果有错误信息，认为失败
+            # 2. 如果PSNR值 > 0，认为成功
+            # 3. 优先使用模型判断
+            actual_successful = model_successful
+            if error_message:
+                actual_successful = False
+            elif psnr_value > 0:
+                actual_successful = True
+
+            # 更新parsed中的成功状态
+            parsed["successful"] = actual_successful
 
             # 步骤 3: 如果转码失败且有错误信息，发送飞书告警
-            if not success and error_msg:
+            if not actual_successful and error_message:
                 await send_feishu_notification(
                     title = "转码系统告警",
-                    text_content = f"异常：{error_msg}\n解决方案：{resolution}"
+                    text_content = f"异常：{error_message}\n解决方案：{resolution_steps}"
                 )
                 return {
                     "status": "error_detected",  # 状态：检测到错误

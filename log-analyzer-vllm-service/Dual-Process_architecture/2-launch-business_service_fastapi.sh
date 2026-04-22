@@ -6,9 +6,8 @@ echo "Starting FastAPI Business Service on port 8000..."
 
 uv run uvicorn business_service_fastapi:app \
     --host 0.0.0.0 \
-    --port 8000
-    --workers 4\
-    --reload
+    --port 8000 \
+    --workers 4
 
 
 echo "FastAPI Business Service started."

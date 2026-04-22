@@ -12,7 +12,7 @@ cd "$(dirname "$0")"
 # 清理旧进程
 echo "[1/5] Cleaning old processes..."
 pkill -f "vllm serve.*8001" 2>/dev/null || true             
-pkill -f "uvicorn.*business_service" 2>dev/null || true     
+pkill -f "uvicorn.*business_service" 2>/dev/null || true     
 sleep 2
 
 
@@ -24,17 +24,24 @@ echo "  vLLM PID: $VLLM_PID"                # 打印 PID，方便后续管理和
 
 # 等待 vLLM 服务就绪
 echo "[3/5] Waiting for vLLM to be ready..."
-sleep 15
+MAX_RETRIES=120          # 最多等待 120 秒（120 次 × 1 秒）
+RETRY_COUNT=0
 
+# 循环检查vllm服务是否启动成功
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    if curl -s --fail http://localhost:8001/health > /dev/null 2>&1; then
+        echo "  ✓ vLLM service is ready (took ${RETRY_COUNT}s)"
+        break
+    fi
+    sleep 1
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+done
 
-# 等待 vLLM 是否启动成功
-if curl -s http://localhost:8001/health > /dev/null 2>&1; then
-    echo "  ✓ vLLM service is ready"
-else
-    echo "  ✗ vLLM service failed to start. Check vllm_inference.log"
-    exit 1              # 启动失败，退出脚本（返回错误码 1）
-fi                      # if 语句结束标记
-
+# 超时未就绪则报错退出
+if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+    echo "  ✗ vLLM service failed to start within ${MAX_RETRIES}s. Check vllm_inference.log"
+    exit 1
+fi
 
 # 启动 FastAPI 业务服务
 echo "[4/5] Starting FastAPI Business Service (port 8000)..."
