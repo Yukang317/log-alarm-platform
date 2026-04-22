@@ -184,6 +184,13 @@ ab -n 100 -c 10 -T 'text/plain' -l -s 120 -p request.data <http://localhost:8000
 
 <br />
 
+### 4. 飞书告警
+
+**测试中的压测服务产生的频繁告警内容：**
+<img width="1152" height="2376" alt="e643b707b8eab0f13d289d54219047f9" src="https://github.com/user-attachments/assets/f8253214-8f63-43a2-b942-a14b858d882b" />
+
+
+
 <br />
 
 <br />
